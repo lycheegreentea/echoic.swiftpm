@@ -4,71 +4,89 @@
 //
 //  Created by Lauren Chen on 1/30/26.
 //
+//
+//
 
 import SwiftUI
-import Swift
 import AVFoundation
 import Combine
+#if canImport(UIKit)
+import UIKit // For haptic feedback and opening Settings
+#endif
 
-struct RecordView: View {
-    @StateObject private var rec = Recorder()
-    @State private var recordings: [URL] = []
+
+class RecordingManager: ObservableObject{
+    @Published var recordings: [URL] = []
+}
+struct RecordView: View  {
+    @StateObject private var rec = MiniRecorder()
+    
+    
+    @StateObject private var player = MiniPlayer()
+    @StateObject private var recordingManager = RecordingManager()
+    
+    
+    @State private var micDenied = false
     
     var body: some View {
-        VStack{
-            BarVisualizer(values: rec.meterHistory, barCount: 24)
-                .frame(height: 60)
+        VStack(spacing: 24) {
+            
+            Text("Voice Recorder")
+                .font(.title3).bold()
+            
+            MultiBarVisualizerView(values: rec.meterHistory, barCount: 24)
+                .frame(height: 54)
                 .padding(.horizontal)
             
             ProgressView(value: rec.meterLevel)
                 .progressViewStyle(.linear)
-                .animation(.linear, value: rec.meterLevel)
-                .tint(.green)
-            HStack{
-                Button(rec.isRecording ? "Stop": "Record"){
-                    if rec.isRecording{
+                .tint(.blue.opacity(0.8))
+                .frame(height: 8)
+                .padding(.horizontal)
+                .animation(.linear(duration: 0.05), value: rec.meterLevel)
+            
+            HStack(spacing: 12) {
+                
+                // Record button toggles recording state.
+                Button(rec.isRecording ? "Stop" : "Record") {
+                    print("HI")
+                    playTapHaptic()
+                    print("PLAYED HAPTIC")
+                    if rec.isRecording {
                         rec.stop()
                     } else {
+                        player.stop()
                         rec.start()
                     }
                 }
+                .buttonStyle(.borderedProminent)
+                
+                
+                Button("Play") {
+                    playTapHaptic()
+                    player.play(rec.fileURL)
+                }
+                .buttonStyle(.bordered)
+                .disabled(rec.isRecording || rec.fileURL == nil)
             }
             
-            if let url = rec.fileURL{
+            if let url = rec.fileURL {
                 Text("File: \(url.lastPathComponent)")
                     .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            List{
-                Section("Recordings"){
-                    ForEach(recordings, id: \.self){ url in
-                        HStack{
-                            Text(url.lastPathComponent)
-                            .font(.footnote)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        }
-                    }
-                }
-            }
-        }
-        .padding()
-        .task{
-            rec.requestPermission{_ in}
-            recordings = recordingList()
+            
+            
+            
+            
         }
     }
-    func recordingList() -> [URL]{
-        let dir = try? FileManager.default
-            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appendingPathComponent("Recordings", isDirectory: true)
-        guard let dir, let files = try?
-                FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)else {return []}
-        return files.filter{$0.pathExtension == "m4a"}.sorted{ $0.lastPathComponent > $1.lastPathComponent}
+    func playTapHaptic() {
+        #if canImport(UIKit)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        #endif
     }
-}
-
-#Preview {
-    RecordView()
 }
