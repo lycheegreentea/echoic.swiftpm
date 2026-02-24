@@ -4,7 +4,6 @@ struct ContentView: View {
     var body: some View {
         VStack {
             
-            Text("Hello, world!")
             
         }
         TabView{
@@ -12,7 +11,7 @@ struct ContentView: View {
                 .tabItem{
                     Label("Record", systemImage: "house")
                 }
-            RecordView()
+            DailyView()
                 .tabItem{
                     Label("View", systemImage: "house")
                 }

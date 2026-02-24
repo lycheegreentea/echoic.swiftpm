@@ -39,16 +39,17 @@ import Accelerate
 struct RecordView: View {
     // State object to manage recording and audio levels.
     @StateObject private var rec = MiniRecorder()
-    
     // State object to manage audio playback.
     @StateObject private var player = MiniPlayer()
-    
+    @StateObject var manager = RecordingManager.shared
+
     // List of saved recording file URLs.
-    @State private var recordings: [Recording] = []
+    
+    
     
     func saveRecordings(){
         let url = recordingsDirectory().appendingPathComponent("recordings.plist")
-        try? PropertyListEncoder().encode(recordings).write(to: url)
+        try? PropertyListEncoder().encode(manager.recordings).write(to: url)
     }
     func loadRecording() -> [Recording] {
         let url = recordingsDirectory().appendingPathComponent("recordings.plist")
@@ -110,7 +111,7 @@ struct RecordView: View {
 
         
         // Spectral centroid (rough estimate)
-        var spectralCentroid: Float = 0
+        let spectralCentroid: Float = 0
         if sampleCount >= frameSize {
             for i in stride(from: 0, to: sampleCount - frameSize, by: frameSize) {
                 var frameRMS: Float = 0
@@ -120,10 +121,10 @@ struct RecordView: View {
         }
 
         return Recording(
-            spectralCentroid: rms,
-            silenceRatio: loudnessVariability,
-            averageLoudness: spectralCentroid,
-            loudnessVariability: silenceRatio,
+            spectralCentroid: spectralCentroid,
+            silenceRatio: silenceRatio,
+            averageLoudness: rms,
+            loudnessVariability: loudnessVariability,
             url: url,
             date: Date()
         )
@@ -138,30 +139,15 @@ struct RecordView: View {
     }
 
 
-    struct Recording: Identifiable, Codable{
-        var id = UUID()
-        let spectralCentroid: Float
-        let silenceRatio: Float
-        let averageLoudness: Float
-        let loudnessVariability: Float
-        let url: URL
-        let date: Date
-        init(spectralCentroid: Float, silenceRatio: Float, averageLoudness: Float, loudnessVariability: Float, url: URL, date: Date) {
-            self.spectralCentroid = spectralCentroid
-            self.silenceRatio = silenceRatio
-            self.averageLoudness = averageLoudness
-            self.loudnessVariability = loudnessVariability
-            self.url = url
-            self.date = date
-        }
-        
-    }
+    
     
     
     // Tracks whether microphone permission is denied to show an alert.
     @State private var micDenied = false
     
     var body: some View {
+        @StateObject var manager = RecordingManager.shared
+
         VStack(spacing: 24) {
             
             // MARK: Title
@@ -194,7 +180,7 @@ struct RecordView: View {
                             
                             let features = analyzeRecording(url: url)
                             
-                            recordings.append(features)
+                            manager.recordings.append(features)
                             saveRecordings()
                         }
                     } else {
@@ -243,7 +229,7 @@ struct RecordView: View {
             // MARK: List of saved recordings with playback and swipe-to-delete.
             List {
                 Section("Recordings") {
-                    ForEach(recordings) { Recording in
+                    ForEach(manager.recordings) { Recording in
                         HStack(spacing: 8) {
                             Text(Recording.url.lastPathComponent)
                                 .font(.footnote)
@@ -305,13 +291,13 @@ struct RecordView: View {
                         // }
                         
                         for index in indexSet {
-                            let recording = recordings[index]
+                            let recording = manager.recordings[index]
                             try? FileManager.default.removeItem(at: recording.url)
                             if player.playingURL == recording.url {
                                 player.stop()
                             }
                         }
-                        recordings.remove(atOffsets: indexSet)
+                        manager.recordings.remove(atOffsets: indexSet)
                         saveRecordings()
                     }
                 }
@@ -338,14 +324,14 @@ struct RecordView: View {
                 micDenied = (ok == false)
             }
             // Load existing recordings.
-            recordings = recordingsList()
+            manager.recordings = recordingsList()
         }
         .onChange(of: rec.isRecording) { isRecording in
             // Keep player and recordings in sync with recording state.
             if isRecording {
                 player.stop()
             } else {
-                recordings = recordingsList()
+                manager.recordings = recordingsList()
             }
         }
         .alert("Microphone Access Needed", isPresented: $micDenied) {
@@ -399,4 +385,5 @@ struct RecordView: View {
         return String(format: "%d:%02d", mPart, sPart)
     }
 }
+
 
