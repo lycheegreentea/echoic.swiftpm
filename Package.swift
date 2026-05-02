@@ -17,10 +17,11 @@ let package = Package(
             name: "echoic",
             targets: ["AppModule"],
             bundleIdentifier: "name.lauren.echoic",
+            teamIdentifier: "5464NFJ76M",
             displayVersion: "1.0",
             bundleVersion: "1",
             appIcon: .placeholder(icon: .mic),
-            accentColor: .presetColor(.green),
+            accentColor: .presetColor(.mint),
             supportedDeviceFamilies: [
                 .pad,
                 .phone

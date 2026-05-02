@@ -12,7 +12,7 @@ import SwiftUI
 import AVFoundation
 
 
-final class MiniPlayer: ObservableObject {
+final class MiniPlayer: NSObject, ObservableObject {
     @Published var isPlaying = false
     
     @Published var progress: Double = 0
@@ -22,8 +22,9 @@ final class MiniPlayer: ObservableObject {
     private var timer: AnyCancellable?
     
     private var currentURL: URL?
+    private var completion: (() -> Void)?
     
-    func play(_ url: URL?) {
+    func play(_ url: URL?, completion: (()-> Void)?=nil) {
         guard let url else { return }
         
         if isPlaying, currentURL == url {
@@ -32,9 +33,11 @@ final class MiniPlayer: ObservableObject {
         }
         
         stop()
+        self.completion = completion
         
         do {
             player = try AVAudioPlayer(contentsOf: url)
+            player?.delegate = self
             currentURL = url
             
             player?.prepareToPlay()
@@ -96,4 +99,14 @@ final class MiniPlayer: ObservableObject {
     }
     
     var playingURL: URL? { currentURL }
+}
+extension MiniPlayer: AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        isPlaying = false
+        progress = 0
+        currentURL = nil
+        stopUpdatingProgress()
+        completion?()
+        completion = nil
+    }
 }

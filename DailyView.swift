@@ -14,14 +14,16 @@ struct DailyView: View {
             List{
                 ForEach(manager.sortedDays, id: \.self) { day in
                     NavigationLink{
-                        DayDetailView(initialDay: day, day: day)
+                        DayDetailView(initialDay: day)
                         
                     } label: {
                         Text(formattedDate(day))
                     }
+                    .accessibilityHint("Opens sound summaries for this day")
                 }
             }
-            .navigationTitle("Days!")
+            .navigationTitle("Your life's soundtrack")
+            .accessibilityLabel("List of days")
         }
     }
     func formattedDate(_ date: Date) -> String {

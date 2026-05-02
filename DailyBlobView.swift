@@ -17,42 +17,42 @@ struct DaySummary {
 struct DailyBlobView: View {
     
     @StateObject var manager = RecordingManager.shared
+    @StateObject var player: DayAudioPlayer
+    
     let day: Date
     var body: some View {
-        let recordings = manager.recordingsByDay[day] ?? []
-        let summary = summarize(recordings)
+        let normalizedDay = Calendar.current.startOfDay(for: day)
+        let recordings = manager.recordingsByDay[normalizedDay] ?? []
+
         VStack{
-            Circle()
-                    .fill(.blue)
-                    .frame(height: 300)
-            //BlobView(summary: summary)
-                //.frame(height: 300)
+            
+            BlobView(recording: player.currentRecording, summary: player.currentRecordingFeatures, isPlaying: $player.isPlaying)
+                .frame(height: 300)
+            
             Text(formattedDate(day))
                 .font(.headline)
+                Button(player.isPlaying ? "Pause" : "Play") {
+                    if player.isPlaying {
+                        player.pause()
+                    } else {
+                        player.playAll()
+                        player.isPlaying = true
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                
         }
+        .padding()
     }
-    func summarize(_ recordings: [Recording]) -> DaySummary {
-        guard !recordings.isEmpty else {
-            return DaySummary(loudness: 0, silence: 1, variability: 0, spectral: 0)
-        }
-        let avgLoudness = recordings.map { $0.averageLoudness}.reduce(0, +) / Float(recordings.count)
-        let avgSilence = recordings.map { $0.silenceRatio}.reduce(0, +) / Float(recordings.count)
-        let avgVariability = recordings.map { $0.loudnessVariability}.reduce(0, +) / Float(recordings.count)
-        let avgSpectralCentroid = recordings.map { $0.spectralCentroid}.reduce(0, +) / Float(recordings.count)
-        return DaySummary(
-            loudness: avgLoudness,
-            silence: avgSilence,
-            variability: avgVariability,
-            spectral: avgSpectralCentroid
-        )
-    }
+    
     func formattedDate(_ date: Date) -> String {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             return formatter.string(from: date)
         }
+    init(day: Date) {
+            self.day = day
+            _player = StateObject(wrappedValue: DayAudioPlayer(day: day))
+        }
 }
 
-#Preview {
-    DailyBlobView( day: Date())
-}

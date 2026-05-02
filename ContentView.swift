@@ -9,15 +9,15 @@ struct ContentView: View {
         TabView{
             RecordView()
                 .tabItem{
-                    Label("Record", systemImage: "house")
+                    Label("Record", systemImage: "waveform")
                 }
             DailyView()
                 .tabItem{
-                    Label("View", systemImage: "house")
+                    Label("Listen", systemImage: "headphones")
                 }
-            RecordView()
+            InfoView()
                 .tabItem{
-                    Label("Insights", systemImage: "house")
+                    Label("About", systemImage: "text.rectangle")
                 }
             
         }

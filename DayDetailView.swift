@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct DayDetailView: View{
+struct DayDetailView: View {
     @StateObject var manager = RecordingManager.shared
     let initialDay: Date
-    let day: Date
     @State private var selectedIndex: Int = 0
-    var body: some View{
+    
+    var body: some View {
         let days = manager.sortedDays
         
         TabView(selection: $selectedIndex) {
@@ -22,18 +22,10 @@ struct DayDetailView: View{
             }
         }
         .tabViewStyle(.page)
-        .onAppear{
-            if let index = days.firstIndex(of: initialDay){
+        .onAppear {
+            if let index = days.firstIndex(of: initialDay) {
                 selectedIndex = index
             }
         }
-    }
-    func play(_ url: URL) {
-        //implemnet
-    }
-    func formattedDate(_ date: Date) -> String{
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
     }
 }
